@@ -1,0 +1,60 @@
+diff --git a/home/harsha/Downloads/swftools/swftools.admin.inc b/swftools.admin.inc
+index 16eceda..d619906 100644
+--- a/home/harsha/Downloads/swftools/swftools.admin.inc
++++ b/swftools.admin.inc
+@@ -537,3 +537,54 @@ function swftools_admin_cck_form() {
+   return system_settings_form($form);
+   
+ }
++
++function swftools_admin_wowza_form() {
++	$form = array();
++
++// 	$xml = simplexml_load_file('/usr/local/WowzaMediaServer/conf/protected/Application.xml');
++
++	$form['wowza_method'] = array(
++		'#type' => 'fieldset',
++		'#title' => t('Wowza Methods'),
++		'#collapsible' => TRUE,
++		'#collapsed' => FALSE,
++	);
++	
++	$form['wowza_method']['stream_enabled'] = array(
++			'#type' => 'checkbox',
++			'#title' =>	t('Enable Streaming'),
++			'#default_value' => 0,
++			'#description' => t('If checked video will be streamed over wowza.'),
++	);
++	/*
++	$form['wowza_method']['storage_location'] = array(
++		'#type' => 'textfield',
++		'#title' =>	t('Storage Location'),
++		'#default_value' => t((string)$xml->Application->Streams->StorageDir),
++		'#description' => t('Point to the location where the media files are saved'),
++	);
++	
++	$form['wowza_method']['protocol'] = array(
++			'#type' => 'select',
++			'#title' =>	t('Protocol'),
++			'#description' => t('Point to the location where the media files are saved'),
++			'#options' => array('rtmp' => 'rtmp', 'rtmpe' => 'rtmpe'),
++	);
++
++	$form['wowza_method']['server_ip'] = array(
++			'#type' => 'textfield',
++			'#title' =>	t('Wowza Media Server URL'),
++			'#default_value' => t((string)$xml->Application->RTP->RTSPOriginIpAddress),
++			'#description' => t('Specify the URL to Wowza Media Server'),
++	);
++	
++	$form['wowza_method']['server_port'] = array(
++			'#type' => 'textfield',
++			'#title' =>	t('Wowza Media Server Port'),
++			'#default_value' => t('1935'),
++			'#description' => t('Specify the Port'),
++	);
++	unset($xml);
++*/
++	return $form;
++}
+\ No newline at end of file

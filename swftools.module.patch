@@ -1,0 +1,134 @@
+diff --git a/home/harsha/Downloads/swftools/swftools.module b/swftools.module
+index 54e09ed..f4f180f 100644
+--- a/home/harsha/Downloads/swftools/swftools.module
++++ b/swftools.module
+@@ -102,6 +102,15 @@ function swftools_menu() {
+     );
+   }
+ 
++  $items['admin/settings/swftools/wowza'] = array(
++  	'title' => 'Wowza Configuration',
++  	'description' => 'Wowza Media Server Configuration.',
++  	'access arguments' => $swf_admin,
++  	'page callback' => 'drupal_get_form',
++  	'page arguments' => array('swftools_admin_wowza_form'),
++  	'file' => 'swftools.admin.inc',
++  	);
++  
+   $items['admin/reports/swftools'] = array(
+     'title' => 'SWF Tools status',
+     'description' => 'Get an overview of the status of the SWF Tools module and its supporting files.',
+@@ -498,8 +507,8 @@ function swf($file, $options = array()) {
+   if (module_hook($resolved_methods->player['module'], 'swftools_flashvars')) {
+ 
+     // Get player flashvars
+-    $player_flashvars = module_invoke($resolved_methods->player['module'], 'swftools_flashvars', $action, $resolved_methods, $vars);
+-    
++    //$player_flashvars = module_invoke($resolved_methods->player['module'], 'swftools_flashvars', $action, $resolved_methods, $vars);
++    $player_flashvars = swftools_flashvars_invoke($action, $resolved_methods, $vars);
+     // Merge player flashvars with existing flashvars
+     if (is_array($player_flashvars)) {
+       $vars->flashvars = array_merge($vars->flashvars, $player_flashvars);
+@@ -1478,6 +1487,10 @@ function swftools_theme() {
+       'arguments' => array('element' => NULL),
+       'function' => 'theme_swftools_formatter_playlist',
+     ),
++  	'swftools_formatter_swftools_wowza_stream' => array(
++  		'arguments' => array('element' => NULL),
++  		'function' => 'theme_swftools_formatter_swftools',
++  	),
+   );
+ }
+ 
+@@ -1821,7 +1834,11 @@ function swftools_field_formatter_info() {
+     'swftools' => array('label' => t('SWF Tools - with download link'),
+       'field types' => array('filefield'),
+       'multiple values' => CONTENT_HANDLE_CORE,
+-    ),    
++    ),
++  	'swftools_wowza_stream' => array('label' => t('SWF Tools - with Wowza Streaming'),
++  		'field types' => array('filefield'),
++  		'multiple values' => CONTENT_HANDLE_CORE,
++  	),
+   );
+ }
+ 
+@@ -1840,6 +1857,15 @@ function theme_swftools_formatter_swftools($element) {
+   if (empty($element['#item']['fid'])) {
+     return '';
+   }
++  print "1<br>";
++  module_load_include('inc', 'swftools', 'swftools.admin');
++  $wowza_admin_fields = swftools_admin_wowza_form();
++  
++  //If condiftion needs to be changed such that the streaming is carried out only when the check box "Enable Streaming" is selected.
++  //I believe a column needs to be added in DB for "Enable Streaming". Unsure at this point whether or not this should be added to the SWF table.
++  if ($wowza_admin_fields['wowza_method']['stream_enabled']['#default_value']==0) {print "2<br>";
++  	return theme_swftools_formatter_wowza_stream($element);
++  }
+   
+   // Get the markup for the flash content from swf()
+   $return = swf($element['#item']['filepath']);
+@@ -1853,6 +1879,29 @@ function theme_swftools_formatter_swftools($element) {
+   return $return;
+ }
+ 
++function theme_swftools_formatter_wowza_stream($element) {
++
++	if(!empty($element['#item']['filename'])){
++		$file_extension = pathinfo($element['#item']['filename'], PATHINFO_EXTENSION);
++		$media_name = "";
++		if(in_array($file_extension, array("mp4", "f4v", "mov", "m4v", "mp4a", "3gp", "3g2"))){
++			$media_name = "mp4:" . $element['#item']['filename'];
++		}else if($file_extension=="flv"){
++			$media_name = "flv:" . $element['#item']['filename'];
++		}else if($file_extension=="mp3"){
++			$media_name = "mp3:" . $element['#item']['filename'];
++		}
++		
++		$return = swf($media_name,
++				array(
++						'flashvars' => array('type' => 'rtmp'),
++						'othervars' => array('stream' => 'rtmp://localhost:1935/protected', 'methods' => array('action' => 'swftools_flv_display')),
++				)
++		);
++	}
++	
++	return $return;
++}
+ 
+ /**
+  * Theme function to turn multiple value CCK filefield in to a playlist.
+@@ -1927,3 +1976,32 @@ function theme_swftools_formatter_playlist($element) {
+   return swf($files);
+   
+ }
++
++
++/**
++* Invokes hook_swftools_flashvars() in the relevant player module.
++*
++* We cannot use module_invoke() for this, because the arguments need to be passed by reference.
++*
++* @param $action
++*   String defining the action that is to be performed, eg SWFTOOLS_FLV_DISPLAY
++* @param &$methods
++*   Object containing two keys - player and method. Each consists of an array
++*   that defines the details of the resolved player and embedding method that
++*   is being used for this file.
++* @param &$vars
++*   Object containing three keys - othervars, flashvars and params. These are
++*   arrays containing key/value pairs that contain all the data assigned to this
++*   file so far. Refer to swf() for more details about the $vars array.
++* @return
++*   Return an array of flashvars needed to allow the player to work.
++*/
++function swftools_flashvars_invoke($action, &$methods, &$vars) {
++
++  // Build the name of the function we are going to call
++  $function = $methods->player['module'] . '_swftools_flashvars';
++ 
++  // Call the function and return the resulting flashvars to the caller
++  return($function($action, $methods, $vars));
++
++}
